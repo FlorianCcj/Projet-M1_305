@@ -1,0 +1,157 @@
+
+/**
+ * Created by Florian on 06/02/2015.
+ */
+
+"use strict";
+
+var usb = require("usb"); // pour detection
+var events = require("events"); // pour detection de la clé
+var fs = require('fs'); // pour la lecture du fichier
+var child = require("child_process"); // pour la copy de fichier
+
+
+// ------------------ detection de la clé ----------------
+
+var usb_class = function () {
+    this._old_detect = [];
+    this._ev = new events.EventEmitter();
+};
+
+usb_class.prototype = {
+    run: function () {
+        this._watcher = setInterval(this.watch_device.bind(this), 1000);
+        this._ev.on("new_device", this.new_device.bind(this));
+    },
+    watch_device: function () {
+        this._detect = usb.getDeviceList();
+        if (this._old_detect.length == 0) this._old_detect = this._detect;
+        if (this._detect.length != this._old_detect.length) {
+            this._ev.emit("new_device", this._old_detect.length, this._detect.length);
+            this._old_detect = this._detect;
+        }
+    },
+    new_device: function (o, n) {
+        if (o < n) {
+            console.log("Plugged");
+        } else {
+            console.log("Unplugged");
+        }
+        for (var a in this._detect) {
+            if (this._detect.hasOwnProperty(a)) {
+                console.log(this._detect[a].deviceDescriptor.idProduct);
+            }
+        }
+
+        //clearInterval(this._watcher);
+    }
+};
+
+//var u = new usb_class();
+//u.run();
+
+// -------------------traitement des fichier -------------------
+
+
+var path = "E:/";
+
+var file_class = function () {
+    this._usb_date=[];
+    this._cpu_date=[];
+    this._usb_d_path = "./usb/";
+    this._cpu_d_path = "./cpu/";
+    this._more_recent;
+};
+
+file_class.prototype = {
+    run: function () {
+        this.determined_more_recent();
+        this._more_recent = "usb";
+    },
+    date_from_file: function (path, cpu_or_usb) {
+        var path_total = path + "test.txt";
+        var stock_date;
+        stock_date = fs.readFileSync(path_total);
+        if (cpu_or_usb == "cpu") {
+            this._cpu_date = stock_date;
+        }
+        if (cpu_or_usb == "usb") {
+            this._usb_date = stock_date;
+        }
+        console.log("Taking date from " + cpu_or_usb);
+
+    },
+    /* determined_more_recent ne foinctionne pas */
+    determined_more_recent: function () {
+        this.date_from_file(file_test._usb_d_path, "usb");
+        this.date_from_file(file_test._cpu_d_path, "cpu");
+        if (this._usb_date > this._cpu_date){
+            this._more_recent="usb";
+        }else if (this._usb_date < this._cpu_date){
+            this._more_recent="cpu";
+        }
+    },
+    copy_file : function (file_name) {
+
+            var path_in;
+            var path_out;
+
+            if (this._more_recent == "usb") {
+                path_in = this._usb_d_path + file_name;
+                path_out = this._cpu_d_path + file_name;
+            } else if (this._more_recent == "cpu") {
+                path_out = this._usb_d_path + file_name;
+                path_in = this._cpu_d_path + file_name;
+            }
+
+            var cp = child.spawn("cp", ["-ruv", path_in, path_out]);
+
+            cp.stdout.on("data", function (data) {
+                console.log("stdout copying : " + data);
+            });
+
+            cp.stderr.on("data", function (e) {
+                console.log(e.toString());
+            });
+        },
+    delete_file : function (file_name) {
+
+            var path;
+
+            if (this._more_recent == "usb") {
+                path = this._cpu_d_path + file_name;
+            } else if (this._more_recent == "cpu") {
+                path = this._usb_d_path + file_name;
+            }
+
+            var rm = child.spawn("rm", ["-rv", path]);
+
+            rm.stdout.on("data", function (data) {
+                console.log("stdout: " + data);
+            });
+
+            rm.stderr.on("data", function (e) {
+                console.log(e.toString());
+            });
+
+        },
+    /* ne fonctionne pas  */
+    create_hidden_file : function(path) {
+        var lolilol = new Date();
+        fs.writeFile(path + "test.txt", lolilol, function (err) {
+            if (err) {
+                console.log(err);
+            }
+        });
+    }
+};
+
+var file_test = new file_class();
+file_test.run();
+console.log("usb date :"+file_test._usb_date);
+console.log("usb date :"+file_test._usb_date[0]);
+console.log("cpu date :"+file_test._cpu_date);
+console.log("more recent :"+file_test._more_recent);
+file_test.copy_file("copy_test.txt");
+file_test.delete_file("copy_test.txt");
+file_test.create_hidden_file(this._cpu_d_path);

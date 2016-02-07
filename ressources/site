@@ -1,0 +1,21 @@
+/* A trier */
+
+https://github.com/schakko/node-usb
+
+http://grokbase.com/p/gg/nodejs/12b69m76a3/detect-when-usb-mass-storage-device-is-plugged-in
+
+/* node-usb libusb-1.0 */
+https://github.com/schakko/node-usb
+
+/* Utilise dbus-native */
+https://github.com/sidorares/node-dbus
+
+/* utilise build essential libudev et usb */
+
+/* fonctionnel en python 2.X et pas sur les autre */
+
+/* Utilise node-serialport */
+https://github.com/voodootikigod/node-serialport
+
+/* Sur un applet chrome */
+https://developer.chrome.com/apps/app_usb
